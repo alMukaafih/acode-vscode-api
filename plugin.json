@@ -1,0 +1,16 @@
+{
+  "id": "almukaafih.vscode-api",
+  "name": "vscode-api",
+  "main": "main.js",
+  "version": "0.1.0",
+  "readme": "readme.md",
+  "icon": "icon.png",
+  "files": [],
+  "minVersionCode": 290,
+  "price": 0,
+  "author": {
+    "name": "alMukaafih",
+    "email": "almukaafih@gmail.com",
+    "github": "alMukaafih"
+  }
+}

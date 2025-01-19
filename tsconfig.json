@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "DOM",
+      "ES2020"
+    ],
+    "jsx": "react-jsx",
+    "target": "ES2020",
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "useDefineForClassFields": true,
+    /* modules */
+    "module": "ESNext",
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    /* type checking */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": [
+      "@acode-app/types",
+    ],
+    /* */
+    "baseUrl": ".",
+    "paths": {
+      "vs/*": [
+        "src/vs/*"
+      ],
+      "lib/*": [
+        "src/lib/*"
+      ],
+      "plugin.json": [
+        "plugin.json"
+      ]
+    },
+    "outDir": "./out"
+  },
+  "include": [
+    "src/lib/**/*",
+    "src/vs"
+  ],
+  "exclude": [
+    "dist",
+    "pkg",
+    "node_modules"
+  ]
+}
