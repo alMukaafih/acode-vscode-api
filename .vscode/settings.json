@@ -32,5 +32,9 @@
   },
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "typescript.suggest.objectLiteralMethodSnippets.enabled": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.suggest.completeFunctionCalls": false,
+  "biome.lspBin": "node_modules/@biomejs/cli-linux-x64/biome"
 }

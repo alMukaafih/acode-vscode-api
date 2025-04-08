@@ -17,9 +17,36 @@ This plugin exposes vscode like api in Acode.
 ## • Usage
 
 ```js
+// main.js
+import { activate, deactivate } from "./vscode-extension";
 const vscode = acode.require("vscode");
+
+const id = "extension-id";
+
+if (window.acode) {
+  acode.setPluginInit(id, async (rootUrl, $page, _) => {
+    if (!rootUrl.endsWith("/")) {
+      rootUrl += "/";
+    }
+
+    if (vscode && window.vsApi) {
+      activate(new vscode.ExtensionContext(id));
+    } else {
+      window.addEventListener("vscode-api", async () => {
+        activate(new vscode.ExtensionContext(id));
+      });
+    }
+  });
+
+  acode.setPluginUnmount(id, () => {
+    deactivate();
+  });
+}
 ```
 
-## • Note
+## • Notes
 
-Not all vscode's api is/will be implemented.
+1. Currently not all vscode's api are implemented.
+2. This plugin is meant to assist plugin devs in porting vscode extensions to Acode.
+
+## • Api

@@ -7,7 +7,7 @@ import ViewColumn from "./ViewColumn";
 export default class TextEditor implements vscode.TextEditor {
 	document: TextDocument;
 	get selection(): Selection {
-		return Selection.from(this.document.into().getSelection());
+		return Selection.from(this.document.into().session.getSelection());
 	}
 
 	public get selections(): readonly Selection[] {
@@ -15,15 +15,15 @@ export default class TextEditor implements vscode.TextEditor {
 	}
 
 	get visibleRanges(): readonly Range[] {
-		const screenRow = this.document.into().getScreenLength();
-		const screenColumn = this.document.into().getScreenWidth();
+		const screenRow = this.document.into().session.getScreenLength();
+		const screenColumn = this.document.into().session.getScreenWidth();
 		return [
 			Range.from(
 				ace.Range.fromPoints(
-					this.document.into().screenToDocumentPosition(0, 0),
+					this.document.into().session.screenToDocumentPosition(0, 0),
 					this.document
 						.into()
-						.screenToDocumentPosition(screenRow, screenColumn),
+						.session.screenToDocumentPosition(screenRow, screenColumn),
 				),
 			),
 		];
@@ -31,13 +31,13 @@ export default class TextEditor implements vscode.TextEditor {
 
 	get options(): vscode.TextEditorOptions {
 		return {
-			tabSize: this.document.into().getTabSize(),
+			tabSize: this.document.into().session.getTabSize(),
 		};
 	}
 
 	viewColumn: ViewColumn | undefined = ViewColumn.One;
 
-	constructor(value: AceApi.Ace.EditSession) {
+	constructor(value: AcodeApi.EditorFile) {
 		this.document = new TextDocument(value);
 	}
 
@@ -72,7 +72,7 @@ export default class TextEditor implements vscode.TextEditor {
 			| readonly vscode.Range[]
 			| readonly vscode.DecorationOptions[],
 	): void {
-		this.document.into().addGutterDecoration;
+		this.document.into().session.addGutterDecoration;
 		throw new Error("Method not implemented.");
 	}
 

@@ -4,8 +4,6 @@ import { toDisposable } from "../base/lifecycle";
 import TextEditor from "./TextEditor";
 import TextEditorEdit from "./TextEditorEdit";
 
-const vs = acode.require("vscode");
-
 class Commands {
 	result: any;
 	registerCommand(
@@ -13,13 +11,10 @@ class Commands {
 		callback: (...args: any[]) => any,
 		thisArg?: any,
 	): Disposable {
-		let result: any;
-		this.result = result;
 		editorManager.editor.commands.addCommand({
-			name: command,
-			decription: vs._contribs.commands[command],
+			name: vsApi.getCommandName(command),
 			exec: (_editor: AceApi.Ace.Editor, args?: any): void => {
-				result = callback.apply(thisArg, args);
+				this.result = callback.apply(thisArg, args);
 			},
 		});
 
@@ -37,16 +32,13 @@ class Commands {
 		) => void,
 		thisArg?: any,
 	): Disposable {
-		let result: any;
-		this.result = result;
 		editorManager.editor.commands.addCommand({
-			name: command,
-			decription: vs._contribs.commands[command],
+			name: vsApi.getCommandName(command),
 			exec: (_editor: AceApi.Ace.Editor, args?: any): void => {
-				const session = editorManager.activeFile.session;
-				const editor = new TextEditor(session);
-				const editoredit = new TextEditorEdit(session);
-				result = callback.apply(thisArg, [editor, editoredit, ...args]);
+				const file = editorManager.activeFile;
+				const editor = new TextEditor(file);
+				const editoredit = new TextEditorEdit(file.session);
+				callback.apply(thisArg, [editor, editoredit, ...args]);
 			},
 		});
 
@@ -55,18 +47,20 @@ class Commands {
 		});
 	}
 
-	executeCommand<T = unknown>(command: string, ...rest: any[]): Thenable<T> {
+	async executeCommand<T = unknown>(
+		command: string,
+		...rest: any[]
+	): Promise<T> {
 		editorManager.editor.commands.exec(
-			vs._contribs.commands[command],
+			vsApi.getCommandName(command),
 			editorManager.editor,
 			rest,
 		);
-		return Promise.resolve(this.result);
+		return this.result;
 	}
 
-	getCommands(_filterInternal?: boolean): Thenable<string[]> {
-		const commands = Object.keys(editorManager.editor.commands.commands);
-		return Promise.resolve(commands);
+	async getCommands(_filterInternal?: boolean): Promise<string[]> {
+		return Object.keys(editorManager.editor.commands.commands);
 	}
 }
 

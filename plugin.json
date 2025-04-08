@@ -1,10 +1,11 @@
 {
-  "id": "almukaafih.vscode-api",
+  "id": "almukaafih.vscode_api",
   "name": "vscode-api",
   "main": "main.js",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "readme": "readme.md",
   "icon": "icon.png",
+  "license": "MIT",
   "files": [],
   "minVersionCode": 290,
   "price": 0,

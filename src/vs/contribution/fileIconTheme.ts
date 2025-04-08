@@ -41,6 +41,116 @@ export interface IFileIconTheme {
 	languageIds?: Record<string, number>;
 }
 
+/**
+ * Represents the options required to load a file icon theme.
+ */
+interface LoadOptions {
+	/**
+	 * The name of the file icon theme.
+	 */
+	name: string;
+
+	/**
+	 * The URL to the CSS file associated with the file icon theme.
+	 */
+	cssUrl: string;
+
+	/**
+	 * A function that returns a promise resolving to the file icon theme.
+	 */
+	theme: () => Promise<IFileIconTheme>;
+
+	/**
+	 * Indicates whether the file icon theme is minimized.
+	 */
+	isMinimized: boolean;
+
+	/**
+	 * (Optional) The root URL for the file icon theme resources.
+	 */
+	rootUrl?: string;
+}
+
+/**
+ * Represents the options used to resolve file icons.
+ */
+interface ResolveOptions {
+	/**
+	 * The name of the file or language ID.
+	 */
+	name: string;
+
+	/**
+	 * The key associated with the file icon definition.
+	 */
+	isFilename: boolean;
+
+	/**
+	 * The file type associated with the file as returned from `getFileType` function.
+	 */
+	fileType: string;
+
+	/**
+	 * The language ID associated with the file.
+	 */
+	languageId: string;
+
+	/**
+	 * The key associated with the file icon definition.
+	 */
+	isMinimized: boolean;
+
+	/**
+	 * Indicates whether the file icon is associated with a language ID.
+	 */
+	rootUrl?: string;
+}
+
+/**
+ * Represents the options used to insert CSS rules for file icons.
+ */
+interface InsertCSSOptions {
+	/**
+	 * The name of the file.
+	 */
+	name: string;
+
+	/**
+	 * The key associated with the file icon definition.
+	 */
+	key: string;
+
+	/**
+	 * The file icon definition.
+	 */
+	def: IDefinition;
+
+	/**
+	 * Indicates whether the name is a filename or a file extension.
+	 */
+	isFilename: boolean;
+
+	/**
+	 * The file type associated with the file as returned from `getFileType` function.
+	 */
+	fileType: string;
+
+	/**
+	 * The language ID associated with the file.
+	 */
+	isLanguageId: boolean;
+
+	/**
+	 * The key associated with the file icon definition.
+	 */
+	rootUrl?: string;
+
+	/**
+	 * Indicates whether the file icon theme is minimized.
+	 */
+	isMinimized: boolean;
+}
+
 function getFileType(filename: string) {
 	const regex: Record<string, RegExp> = {
 		babel: /\.babelrc$/i,
@@ -95,6 +205,20 @@ function getIconForFile(filename: string) {
 	return `file file_type_default ${iconForMode} ${iconForType}`;
 }
 
+/**
+ * The `IconTheme` class is responsible for managing and applying file icon themes
+ * in a web-based environment. It dynamically loads and applies CSS styles for
+ * file icons based on file names, extensions, and language IDs.
+ *
+ * This class provides functionality to:
+ * - Load and apply a file icon theme.
+ * - Resolve file icons based on file names, extensions, or language IDs.
+ * - Dynamically insert CSS rules for file icons.
+ * - Reset the applied icon theme.
+ *
+ * The class interacts with the DOM by creating and managing `<style>` and `<link>`
+ * elements to apply the necessary styles for file icons.
+ */
 export class IconTheme {
 	folders: HTMLLinkElement;
 	_theme!: IFileIconTheme;
@@ -119,25 +243,34 @@ export class IconTheme {
 		this.fileNames.id = "vsext-icontheme-filenames";
 	}
 
-	async load(theme: {
-		name: string;
-		cssUrl: string;
-		theme: () => Promise<IFileIconTheme>;
-		isMinimized: boolean;
-		rootUrl?: string;
-	}) {
+	/**
+	 * Loads a file icon theme based on the provided options and applies it to the document.
+	 *
+	 * @param options - The options for loading the file icon theme.
+	 *
+	 * @remarks
+	 * This method resets the current theme before applying the new one. It appends the necessary
+	 * CSS links to the document's `<head>` and overrides the `getIconForFile` helper function
+	 * to resolve file icons based on the filename, file type, and language ID.
+	 *
+	 * The `getIconForFile` function attempts to resolve an icon by checking the filename and
+	 * its extensions iteratively until a match is found or all parts are exhausted.
+	 *
+	 * If no theme is provided or the theme fails to load, the method exits early.
+	 */
+	async load(options: LoadOptions) {
 		this.reset();
 
-		if (!theme) {
+		if (!options) {
 			return;
 		}
 
-		this._theme = await theme.theme();
+		this._theme = await options.theme();
 		if (!this._theme) {
 			return;
 		}
 
-		this.folders.href = theme.cssUrl;
+		this.folders.href = options.cssUrl;
 		document.head.appendChild(this.folders);
 		document.head.appendChild(this.langIds);
 		document.head.appendChild(this.fileExts);
@@ -158,8 +291,8 @@ export class IconTheme {
 					isFilename,
 					fileType,
 					languageId,
-					rootUrl: theme.rootUrl,
-					isMinimized: theme.isMinimized,
+					rootUrl: options.rootUrl,
+					isMinimized: options.isMinimized,
 				});
 
 				if (result + 1) {
@@ -175,27 +308,23 @@ export class IconTheme {
 	}
 
 	/**
-	 * Resolve extension or filename
-	 * @param name filename or ext
-	 * @param isFilename is it a filename
-	 * @param fileType
-	 * @param languageId
-	 * @returns
+	 * Resolves the appropriate icon definition key based on the provided options.
+	 *
+	 * @param options - The options used to determine the icon definition.
+	 *
+	 * @returns The resolved key as a number if successful, or `-1` if no match is found.
+	 *
+	 * The method determines the appropriate key by checking the theme's file names,
+	 * file extensions, and language IDs. If a match is found, it retrieves the
+	 * corresponding icon definition and inserts the associated CSS.
 	 */
-	resolve(icon: {
-		name: string;
-		isFilename: boolean;
-		fileType: string;
-		languageId: string;
-		isMinimized: boolean;
-		rootUrl?: string;
-	}): number {
+	resolve(options: ResolveOptions): number {
 		let iconDefinitions: "0" | "iconDefinitions";
 		let fileExtensions: "1" | "fileExtensions";
 		let fileNames: "2" | "fileNames";
 		let languageIds: "3" | "languageIds";
 
-		if (icon.isMinimized) {
+		if (options.isMinimized) {
 			iconDefinitions = "0";
 			fileExtensions = "1";
 			fileNames = "2";
@@ -209,46 +338,69 @@ export class IconTheme {
 
 		let key: number | undefined;
 		let isLanguageId = false;
-		if (icon.isFilename) {
+		if (options.isFilename) {
 			const _fileNames = this._theme[fileNames];
 			if (_fileNames !== undefined) {
-				key = _fileNames[icon.name];
+				key = _fileNames[options.name];
 			}
 		} else {
 			const _fileExtensions = this._theme[fileExtensions];
 			if (_fileExtensions !== undefined) {
-				key = _fileExtensions[icon.name];
+				key = _fileExtensions[options.name];
 			}
 		}
 
 		const _languageIds = this._theme[languageIds];
 		if (typeof key !== "undefined") {
-		} else if (_languageIds?.[icon.languageId]) {
-			icon.name = icon.languageId;
-			icon.isFilename = false;
+		} else if (_languageIds?.[options.languageId]) {
+			options.name = options.languageId;
+			options.isFilename = false;
 			isLanguageId = true;
-			key = _languageIds[icon.languageId];
+			key = _languageIds[options.languageId];
 		} else {
 			return -1;
 		}
 
 		const def = this._theme[iconDefinitions][key.toString()];
 
-		this.insertCss({ ...icon, key: key.toString(), def, isLanguageId });
+		this.insertCss({ ...options, key: key.toString(), def, isLanguageId });
 		return key;
 	}
 
-	async insertCss(icon: {
-		name: string;
-		key: string;
-		def: IDefinition;
-		isFilename: boolean;
-		fileType: string;
-		isLanguageId: boolean;
-		rootUrl?: string;
-		isMinimized: boolean;
-	}): Promise<void> {
-		if (this.cache.has(icon.name)) {
+	/**
+	 * Inserts a CSS rule into the appropriate stylesheet based on the provided options.
+	 * This method ensures that the CSS rule is only added once for a given name.
+	 *
+	 * @param options - The configuration options for the CSS rule to be inserted.
+	 *
+	 * @remarks
+	 * - The method dynamically generates a CSS rule based on the provided options and inserts it into
+	 *   the appropriate stylesheet (fileNames, langIds, or fileExts).
+	 * - The `cache` is used to ensure that duplicate rules are not inserted.
+	 * - The method handles different scenarios such as rules for filenames, language IDs, and file extensions.
+	 *
+	 * @example
+	 * ```typescript
+	 * await insertCss({
+	 *   name: "example",
+	 *   key: "123",
+	 *   fileType: "ts",
+	 *   isFilename: true,
+	 *   isLanguageId: false,
+	 *   isMinimized: false,
+	 *   def: {
+	 *     iconPath: "icons/example.svg",
+	 *     fontCharacter: "E001",
+	 *     fontColor: "#FF0000",
+	 *     fontSize: "16px",
+	 *     fontId: "CustomFont"
+	 *   },
+	 *   rootUrl: "https://example.com/assets"
+	 * });
+	 * ```
+	 */
+	async insertCss(options: InsertCSSOptions): Promise<void> {
+		if (this.cache.has(options.name)) {
 			return;
 		}
 
@@ -258,7 +410,7 @@ export class IconTheme {
 		let fontSize: "3" | "fontSize";
 		let fontId: "4" | "fontId";
 
-		if (icon.isMinimized) {
+		if (options.isMinimized) {
 			iconPath = "0";
 			fontCharacter = "1";
 			fontColor = "2";
@@ -273,62 +425,71 @@ export class IconTheme {
 		}
 
 		let content = "";
-		if (icon.def[fontCharacter]) {
-			content = `content:"${icon.def[fontCharacter]}"!important;`;
-		} else if (icon.def[iconPath]) {
-			content = `content:""!important;background-image:url(${icon.rootUrl}/${icon.def[iconPath]});`;
+		if (options.def[fontCharacter]) {
+			content = `content:"${options.def[fontCharacter]}"!important;`;
+		} else if (options.def[iconPath]) {
+			content = `content:""!important;background-image:url(${options.rootUrl}/${options.def[iconPath]});`;
 		}
 
-		const _fontColor = icon.def[fontColor]
-			? `color:${icon.def[fontColor]};`
+		const _fontColor = options.def[fontColor]
+			? `color:${options.def[fontColor]};`
 			: "";
-		const _fontId = icon.def[fontId]
-			? `font-family:"${icon.def[fontId]}"!important;`
+		const _fontId = options.def[fontId]
+			? `font-family:"${options.def[fontId]}"!important;`
 			: "";
-		const _fontSize = icon.def[fontSize]
-			? `font-size:${icon.def[fontSize]};`
+		const _fontSize = options.def[fontSize]
+			? `font-size:${options.def[fontSize]};`
 			: "";
 
 		const typeStr =
-			icon.fileType.length !== 0 ? `,.file_type_${icon.fileType}::before` : "";
+			options.fileType.length !== 0
+				? `,.file_type_${options.fileType}::before`
+				: "";
 
 		let selector: string;
-		if (icon.isLanguageId) {
-			selector = `.file_type_${icon.name}::before,.file_id_${icon.key}::before${typeStr}`;
+		if (options.isLanguageId) {
+			selector = `.file_type_${options.name}::before,.file_id_${options.key}::before${typeStr}`;
 		} else {
-			selector = icon.isFilename
+			selector = options.isFilename
 				? // biome-ignore lint/style/useTemplate: <explanation>
-					`*[data-name="${icon.name}"i][data-type="file"]>.file::before,` +
-					`*[name="${icon.name}"i][type="file"]>.file::before,` +
-					`.file_id_${icon.key}::before` +
+					`*[data-name="${options.name}"i][data-type="file"]>.file::before,` +
+					`*[name="${options.name}"i][type="file"]>.file::before,` +
+					`.file_id_${options.key}::before` +
 					typeStr
 				: // biome-ignore lint/style/useTemplate: <explanation>
-					`*[data-name$="${icon.name}"i][data-type="file"]>.file::before,` +
-					`*[name$="${icon.name}"i][type="file"]>.file::before,` +
-					`.file_id_${icon.key}::before` +
+					`*[data-name$="${options.name}"i][data-type="file"]>.file::before,` +
+					`*[name$="${options.name}"i][type="file"]>.file::before,` +
+					`.file_id_${options.key}::before` +
 					typeStr;
 		}
 
 		const css = `${selector}{${content}${_fontColor}${_fontId}${_fontSize}}`;
 		// @vsa-debug
-		console.log(`vsext.icontheme.insertCSS - ${icon.name} - ${css}`);
+		console.log(`vsext.icontheme.insertCSS - ${options.name} - ${css}`);
 
-		if (icon.isFilename) {
+		if (options.isFilename) {
 			this.fileNames.sheet?.insertRule(
 				css,
 				this.fileNames.sheet.cssRules.length,
 			);
-		} else if (icon.isLanguageId) {
+		} else if (options.isLanguageId) {
 			this.langIds.sheet?.insertRule(css, this.langIds?.sheet.cssRules.length);
-		} else if (!icon.name.includes(".")) {
+		} else if (!options.name.includes(".")) {
 			this.fileExts.sheet?.insertRule(css, 0);
 		} else {
 			this.fileExts.sheet?.insertRule(css, this.fileExts.sheet.cssRules.length);
 		}
 
-		this.cache.add(icon.name);
+		this.cache.add(options.name);
 	}
 
+	/**
+	 * Resets the icon theme by removing all previously applied styles and clearing the cache.
+	 *
+	 * @remarks
+	 * This method removes all `<style>` and `<link>` elements associated with the icon theme
+	 * from the document's `<head>`. It also clears the cache of previously resolved icons.
+	 */
 	reset() {
 		this.fileExts.remove();
 		this.fileNames.remove();
@@ -339,12 +500,12 @@ export class IconTheme {
 		helpers.getIconForFile = getIconForFile;
 
 		this.langIds = document.createElement("style");
-		this.langIds.id = "vsext-icontheme-langids";
+		this.langIds.id = "vscode-icontheme-langids";
 
 		this.fileExts = document.createElement("style");
-		this.fileExts.id = "vsext-icontheme-fileexts";
+		this.fileExts.id = "vscode-icontheme-fileexts";
 
 		this.fileNames = document.createElement("style");
-		this.fileNames.id = "vsext-icontheme-filenames";
+		this.fileNames.id = "vscode-icontheme-filenames";
 	}
 }

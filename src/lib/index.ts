@@ -42,6 +42,7 @@ import("vs/index").then(async (module) => {
 
 		async dispose() {
 			acode.define("vscode", undefined as any);
+			window.vsApi = undefined as any;
 		}
 	}
 	try {
@@ -65,8 +66,7 @@ import("vs/index").then(async (module) => {
 								if (module.settings.iconTheme === "default") {
 									return "Default";
 								}
-								return window.vsApi._iconThemes[module.settings.iconTheme]
-									.name;
+								return window.vsApi._iconThemes[module.settings.iconTheme].name;
 							},
 
 							set value(v) {
@@ -93,6 +93,6 @@ import("vs/index").then(async (module) => {
 			});
 		}
 	} catch (e) {
-		window.log("error",e);
+		window.log("error", e);
 	}
 });

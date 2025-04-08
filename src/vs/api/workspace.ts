@@ -9,6 +9,7 @@ import { toDisposable } from "../base/lifecycle";
 import Position from "./Position";
 import Range from "./Range";
 import TextDocument from "./TextDocument";
+import TextDocumentSaveReason from "./TextDocumentSaveReason";
 
 class Workspace {
 	onDidChangeConfiguration(
@@ -46,6 +47,7 @@ class Workspace {
 			document.removeEventListener("configChange", fn);
 		});
 	}
+
 	onDidChangeTextDocument(
 		listener: (e: TextDocumentChangeEvent) => any,
 		thisArgs?: any,
@@ -78,7 +80,7 @@ class Workspace {
 			}
 		};
 
-		editorManager.on("changed", fn);
+		editorManager.on("changed" as AcodeApi.EditorEvent.change, fn);
 
 		return toDisposable(() => {
 			if (disposables) {
@@ -86,7 +88,7 @@ class Workspace {
 					disposable.dispose();
 				}
 			}
-			editorManager.off(AcodeApi.EditorEvent.switchFile, fn);
+			editorManager.off("switch-file" as AcodeApi.EditorEvent.switchFile, fn);
 		});
 	}
 
@@ -120,9 +122,9 @@ class Workspace {
 		disposables?: vscode.Disposable[],
 	): vscode.Disposable {
 		const fn = (file: AcodeApi.EditorFile) => {
-			const save = {
+			const save: TextDocumentWillSaveEvent = {
 				document: new TextDocument(file),
-				reason: undefined,
+				reason: TextDocumentSaveReason.Manual,
 				waitUntil: (thenable: Thenable<readonly vscode.TextEdit[]>): void => {
 					throw new Error("Function not implemented.");
 				},

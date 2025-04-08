@@ -21,7 +21,11 @@ export default class TextDocument
 		return this.inner.filename === "untitled";
 	}
 
-	readonly languageId: string;
+	get languageId(): string {
+		// @ts-ignore
+		return (this.inner.session.getMode().$id || "").split("/").pop();
+	}
+
 	version = 0;
 
 	get isDirty(): boolean {
@@ -70,6 +74,7 @@ export default class TextDocument
 	}
 
 	positionAt(offset: number): Position {
+		// @ts-ignore
 		return Position.from(this.inner.session.doc.indexToPosition(offset));
 	}
 

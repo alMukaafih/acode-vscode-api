@@ -1,15 +1,17 @@
 import type * as vscode from "vscode";
-import type { TabGroups } from "vscode";
+import type { TabGroups, TextEditorSelectionChangeEvent } from "vscode";
 import { toDisposable } from "../base/lifecycle";
-import { Selection } from "./Selection";
-import { TextEditor, type TextEditorSelectionChangeEvent } from "./TextEditor";
+import Selection from "./Selection";
+import TextEditor from "./TextEditor";
+import type StatusBarAlignment from "./StatusBarAlignment";
+import StatusBarItem from "./StatusBarItem";
 
 editorManager.editor.on("change", (delta: AceApi.Ace.Delta) => {
 	editorManager.emit(AcodeApi.EditorEvent.change, delta);
 });
 
 class Window {
-	tabGroups: TabGroups = undefined;
+	tabGroups!: TabGroups;
 	get activeTextEditor(): TextEditor | undefined {
 		return new TextEditor(editorManager.activeFile);
 	}
@@ -18,6 +20,28 @@ class Window {
 		return editorManager.files.map((value) => {
 			return new TextEditor(value);
 		});
+	}
+
+	createStatusBarItem(
+		...args:
+			| [alignment?: StatusBarAlignment, priority?: number]
+			| [id: string, alignment?: StatusBarAlignment, priority?: number]
+	): StatusBarItem {
+		let id: string;
+
+		if (typeof args[0] === "string") {
+			id = args[0];
+		} else {
+			const uuid = crypto.randomUUID();
+			const stack = new Error().stack || uuid;
+			id =
+				callSite(stack)
+					.replace("https://localhost/__cdvfile_files-external__/plugins/", "")
+					.split("/")
+					.shift() || uuid;
+		}
+
+		return new StatusBarItem(id);
 	}
 
 	onDidChangeActiveTextEditor(
@@ -81,13 +105,26 @@ class Window {
 		});
 	}
 
-	showErrorMessage<T extends vscode.MessageItem>(
+	async showErrorMessage<T extends vscode.MessageItem>(
 		message: string,
-		...args: any[]
-	): Thenable<T | undefined> {
+		..._args: any[]
+	): Promise<T | undefined> {
 		toast(message, 5000);
 		return;
 	}
 }
 
+function callSite(stack: string): string {
+	let lines = stack.split("\n");
+	let site = lines[2];
+	let i = 0;
+	while (site[i] !== "(") i++;
+	i++;
+	let start = i;
+
+	while (site[i] !== ":") i++;
+	let end = i;
+
+	return site.slice(start, end);
+}
 export const window /*: typeof vscode.window*/ = new Window();

@@ -37,22 +37,6 @@ async function saveSettings() {
 }
 
 export class Api {
-	/* `commands` Contribution Point   */
-	commands: Record<string, string> = {};
-
-	/* `IconThemes` Contribution Point   */
-	_iconThemes: Record<
-		string,
-		{
-			name: string;
-			cssUrl: string;
-			theme: () => Promise<IFileIconTheme>;
-			isMinimized: boolean;
-			rootUrl?: string;
-		}
-	> = {};
-	iconTheme: IconTheme;
-
 	constructor() {
 		editorManager.editor.commands.addCommand({
 			name: commands.iconTheme,
@@ -71,6 +55,35 @@ export class Api {
 		this.iconTheme = new IconTheme();
 	}
 
+	/* `commands` Contribution Point   */
+	commands: Record<string, string> = {};
+
+	setCommandName(command: string, name: string) {
+		this.commands[command] = name;
+	}
+
+	getCommandName(command: string) {
+		return this.commands[command] ? this.commands[command] : command;
+	}
+
+	/* `IconThemes` Contribution Point   */
+	_iconThemes: Record<
+		string,
+		{
+			name: string;
+			cssUrl: string;
+			theme: () => Promise<IFileIconTheme>;
+			isMinimized: boolean;
+			rootUrl?: string;
+		}
+	> = {};
+	iconTheme: IconTheme;
+
+	/**
+	 * Register a new icon theme
+	 * @param id - The id of the icon theme
+	 * @param detail - The detail of the icon theme
+	 */
 	registerIconTheme(
 		id: string,
 		detail: {
@@ -84,10 +97,19 @@ export class Api {
 		this._iconThemes[id] = detail;
 	}
 
+	/**
+	 * Unregister an icon theme
+	 * @param id - The id of the icon theme
+	 */
 	unRegisterIconTheme(id: string) {
 		delete this._iconThemes[id];
 	}
 
+	/**
+	 * Get the icon theme by id
+	 * @param id - The id of the icon theme
+	 * @returns The icon theme
+	 */
 	getIconTheme(id: string) {
 		return this._iconThemes[id];
 	}
@@ -120,11 +142,14 @@ export class Api {
 }
 
 acode.define("vscode", vscode);
+define("vscode", () => vscode);
 
 declare global {
 	interface Window {
 		vsApi: Api;
 	}
+
+	const vsApi: Api;
 
 	namespace AcodeApi {
 		interface ModulesMap {
